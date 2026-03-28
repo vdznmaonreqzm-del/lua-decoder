@@ -1,32 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Script Decoder Tool</title>
+    <title>Arabic Decoder Tool</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #2e2e2e;
+        }
+        input, textarea {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h1>Roblox Script Decoder</h1>
-    <p>Welcome to the Roblox Script Decoder Tool!</p>
-    <form id="decoderForm">
-        <label for="scriptInput">Enter your Roblox script:</label><br>
-        <textarea id="scriptInput" rows="10" cols="50"></textarea><br>
-        <button type="submit">Decode</button>
-    </form>
-    <h2>Decoded Output:</h2>
-    <pre id="decodedOutput"></pre>
+    <div class="container">
+        <h1>أداة فك التشفير العربية</h1>
+        <textarea id="inputText" rows="5" placeholder="أدخل النص المشفر هنا"></textarea>
+        <button onclick="decodeText()">فك التشفير</button>
+        <h2>النص المفكك:</h2>
+        <textarea id="outputText" rows="5" readonly></textarea>
+    </div>
     <script>
-        document.getElementById('decoderForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const script = document.getElementById('scriptInput').value;
-            // Decode the script (stub function)
-            const decoded = decodeScript(script);
-            document.getElementById('decodedOutput').innerText = decoded;
-        });
+        function decodeText() {
+            const input = document.getElementById('inputText').value;
+            const output = decodeBase64(decryptXOR(input));
+            document.getElementById('outputText').value = output;
+        }
 
-        function decodeScript(script) {
-            // Placeholder for actual decoding logic
-            return "Decoded script content goes here.";
+        function decryptXOR(input) {
+            const key = 'mysecretkey'; // Example key
+            let output = '';
+            for (let i = 0; i < input.length; i++) {
+                output += String.fromCharCode(input.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return output;
+        }
+
+        function decodeBase64(input) {
+            return atob(input);
         }
     </script>
 </body>
