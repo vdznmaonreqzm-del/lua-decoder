@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Script Decoder Tool</title>
+</head>
+<body>
+    <h1>Roblox Script Decoder</h1>
+    <p>Welcome to the Roblox Script Decoder Tool!</p>
+    <form id="decoderForm">
+        <label for="scriptInput">Enter your Roblox script:</label><br>
+        <textarea id="scriptInput" rows="10" cols="50"></textarea><br>
+        <button type="submit">Decode</button>
+    </form>
+    <h2>Decoded Output:</h2>
+    <pre id="decodedOutput"></pre>
+    <script>
+        document.getElementById('decoderForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const script = document.getElementById('scriptInput').value;
+            // Decode the script (stub function)
+            const decoded = decodeScript(script);
+            document.getElementById('decodedOutput').innerText = decoded;
+        });
+
+        function decodeScript(script) {
+            // Placeholder for actual decoding logic
+            return "Decoded script content goes here.";
+        }
+    </script>
+</body>
+</html>
