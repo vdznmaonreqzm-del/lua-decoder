@@ -1,68 +1,36 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arabic Decoder Tool</title>
-    <style>
-        body {
-            background-color: #1e1e1e;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #2e2e2e;
-        }
-        input, textarea {
-            width: 100%;
-            margin: 10px 0;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <title>Lua Decoder</title>
 </head>
 <body>
-    <div class="container">
-        <h1>أداة فك التشفير العربية</h1>
-        <textarea id="inputText" rows="5" placeholder="أدخل النص المشفر هنا"></textarea>
-        <button onclick="decodeText()">فك التشفير</button>
-        <h2>النص المفكك:</h2>
-        <textarea id="outputText" rows="5" readonly></textarea>
-    </div>
+    <h1>Lua Decoder</h1>
+    <label for="encrypted">Enter Encrypted Code:</label><br>
+    <textarea id="encrypted" rows="4" cols="50"></textarea><br>
+    <button onclick="decode()">Decode</button><br><br>
+    <label for="decrypted">Decrypted Output:</label><br>
+    <textarea id="decrypted" rows="4" cols="50" readonly></textarea>
     <script>
-        function decodeText() {
-            const input = document.getElementById('inputText').value;
-            const output = decodeBase64(decryptXOR(input));
-            document.getElementById('outputText').value = output;
+        function atobPolyfill(str) {
+            return Buffer.from(str, 'base64').toString('binary');
         }
 
-        function decryptXOR(input) {
-            const key = 'mysecretkey'; // Example key
-            let output = '';
-            for (let i = 0; i < input.length; i++) {
-                output += String.fromCharCode(input.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        function xorDecrypt(data, key) {
+            let decrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
             }
-            return output;
+            return decrypted;
         }
 
-        function decodeBase64(input) {
-            return atob(input);
+        function decode() {
+            const encrypted = document.getElementById('encrypted').value;
+            const key = 'your-key'; // Replace with your key
+            const b64decoded = atobPolyfill(encrypted);
+            const decrypted = xorDecrypt(b64decoded, key);
+            document.getElementById('decrypted').value = decrypted;
         }
     </script>
 </body>
