@@ -3,262 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فك تشفير سكريبتات Roblox (XOR + Base64)</title>
-    <style>
-        body {
-            background: #1e1e2f;
-            color: #eee;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            direction: ltr;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background: #2d2d3a;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
-        }
-        textarea, input {
-            width: 100%;
-            background: #1e1e2a;
-            color: #eee;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 14px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-        textarea {
-            height: 250px;
-            resize: vertical;
-        }
-        button {
-            background: #3a6ea5;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.2s;
-        }
-        button:hover {
-            background: #2c5282;
-        }
-        .output {
-            background: #1e1e2a;
-            border: 1px solid #3a6ea5;
-            border-radius: 8px;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-break: break-all;
-            margin-top: 15px;
-            min-height: 150px;
-        }
-        h1, h2 {
-            color: #ffd966;
-        }
-        hr {
-            border-color: #555;
-        }
-        .note {
-            background: #2a2a36;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-top: 15px;
-        }
-        .tab {
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-        .tab button {
-            background-color: #3a6ea5;
-            float: left;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 10px 16px;
-            transition: 0.3s;
-            font-size: 14px;
-            margin-right: 5px;
-        }
-        .tab button:hover {
-            background-color: #2c5282;
-        }
-        .tab button.active {
-            background-color: #ffd966;
-            color: #1e1e2f;
-        }
-        .tabcontent {
-            display: none;
-        }
-        .tabcontent.active {
-            display: block;
-        }
-    </style>
+    <title>Auto Decoder</title>
 </head>
 <body>
-<div class="container">
-    <h1>🔓 فك تشفير سكريبتات Roblox</h1>
-    <p>يفك التشفير اللي شفته في السكريبتات (XOR + Base64 + ASCII escapes)</p>
-    
-    <div class="tab">
-        <button class="tablinks active" onclick="openTab(event, 'xor')">🔑 XOR + Base64</button>
-        <button class="tablinks" onclick="openTab(event, 'ascii')">🔢 ASCII Escapes (\072\065)</button>
-        <button class="tablinks" onclick="openTab(event, 'auto')">🤖 فك تلقائي (كل الطرق)</button>
-    </div>
+    <h1>مرحبًا بكم في برنامج فك التشفير التلقائي</h1>
+    <h2>أدخل النص للقيام بفك تشفيره:</h2>
+    <textarea id="inputArea" placeholder="أدخل النص هنا..." rows="10" cols="50"></textarea>
+    <h2>الناتج:</h2>
+    <textarea id="outputArea" readonly rows="10" cols="50"></textarea>
+    <button id="decodeButton">فك التشفير</button>
+    <script>
+        document.getElementById('decodeButton').onclick = function() {
+            // Funcionality to auto-detect encryption and decode
+            var inputText = document.getElementById('inputArea').value;
+            // Add detection logic and decoding functions (XOR, Base64, etc.)
+            var decodedText = autoDetectAndDecode(inputText);
+            document.getElementById('outputArea').value = decodedText;
+        };
 
-    <div id="xor" class="tabcontent active">
-        <label><strong>النص المشفر (data):</strong></label>
-        <textarea id="xorData" placeholder='مثال: "\217\215\207\53\245\225\136\81\193\194\200\49\227\185\206\16\159\192\212\40\169\169\198\9\158\250\246\13\210\131\210\76\253"'></textarea>
-        
-        <label><strong>المفتاح (key):</strong></label>
-        <input type="text" id="xorKey" placeholder='مثال: "\126\177\163\187\69\134\219\167"'>
-        
-        <button onclick="xorDecode()">🔓 فك XOR</button>
-    </div>
-
-    <div id="ascii" class="tabcontent">
-        <label><strong>النص المشفر (مثل \072\065\073):</strong></label>
-        <textarea id="asciiData" placeholder='مثال: "\072\065\073\056\070\079\074\061"'></textarea>
-        <button onclick="asciiDecode()">🔓 فك ASCII</button>
-    </div>
-
-    <div id="auto" class="tabcontent">
-        <label><strong>الصق السكريبت المشفر بالكامل:</strong></label>
-        <textarea id="autoData" placeholder="الصق السكريبت كاملاً هنا..."></textarea>
-        <button onclick="autoDecode()">🤖 فك تلقائي</button>
-    </div>
-
-    <h2>النتيجة:</h2>
-    <div id="output" class="output"></div>
-
-    <div class="note">
-        <strong>📌 ملاحظة:</strong> هذه الأداة تفك الأنواع اللي فكيتها يدوياً (XOR مع مفتاح، ASCII escapes، Base64). إذا كان السكريبت مشفراً بآلة افتراضية (Custom VM)، يحتاج تشغيل فعلي.
-    </div>
-</div>
-
-<script>
-    function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].classList.remove("active");
+        function autoDetectAndDecode(text) {
+            // Placeholder for detection logic
+            return text; // Modify this with the actual decoding logic
         }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].classList.remove("active");
-        }
-        document.getElementById(tabName).classList.add("active");
-        evt.currentTarget.classList.add("active");
-    }
-
-    function decodeAsciiEscapes(str) {
-        return str.replace(/\\(\d+)/g, function(match, num) {
-            return String.fromCharCode(parseInt(num, 10));
-        });
-    }
-
-    function xorDecrypt(data, key) {
-        let result = "";
-        for (let i = 0; i < data.length; i++) {
-            let dataByte = data.charCodeAt(i);
-            let keyByte = key.charCodeAt(i % key.length);
-            result += String.fromCharCode(dataByte ^ keyByte);
-        }
-        return result;
-    }
-
-    function base64Decode(str) {
-        try {
-            return atob(str);
-        } catch(e) {
-            return null;
-        }
-    }
-
-    function extractXorStrings(text) {
-        let regex = /v7\(\s*["']([^"']+)['"]\s*,\s*["']([^"']+)['"]\s*\)/g;
-        let matches = [];
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-            matches.push({ data: match[1], key: match[2] });
-        }
-        return matches;
-    }
-
-    function autoDecode() {
-        let script = document.getElementById('autoData').value;
-        if (!script.trim()) {
-            document.getElementById('output').innerText = 'الرجاء لصق السكريبت أولاً.';
-            return;
-        }
-        
-        let result = script;
-        
-        result = decodeAsciiEscapes(result);
-        
-        let xorMatches = extractXorStrings(result);
-        for (let match of xorMatches) {
-            let decrypted = xorDecrypt(match.data, match.key);
-            let base64Decoded = base64Decode(decrypted);
-            if (base64Decoded) {
-                decrypted = base64Decoded;
-            }
-            let pattern = `v7("${match.data}","${match.key}")`;
-            result = result.split(pattern).join(decrypted);
-        }
-        
-        let base64Regex = /[A-Za-z0-9+\/=]{20,}/g;
-        let b64Matches = result.match(base64Regex);
-        if (b64Matches) {
-            for (let b64 of b64Matches) {
-                let decoded = base64Decode(b64);
-                if (decoded && decoded.length > 5 && !decoded.includes('�')) {
-                    result = result.split(b64).join(decoded);
-                }
-            }
-        }
-        
-        document.getElementById('output').innerText = result;
-    }
-
-    function xorDecode() {
-        let data = document.getElementById('xorData').value;
-        let key = document.getElementById('xorKey').value;
-        if (!data.trim() || !key.trim()) {
-            document.getElementById('output').innerText = 'الرجاء إدخال النص المشفر والمفتاح.';
-            return;
-        }
-        
-        let decodedData = decodeAsciiEscapes(data);
-        let decodedKey = decodeAsciiEscapes(key);
-        
-        let result = xorDecrypt(decodedData, decodedKey);
-        
-        let base64Result = base64Decode(result);
-        if (base64Result) {
-            result = base64Result;
-        }
-        
-        document.getElementById('output').innerText = result;
-    }
-
-    function asciiDecode() {
-        let data = document.getElementById('asciiData').value;
-        if (!data.trim()) {
-            document.getElementById('output').innerText = 'الرجاء إدخال النص.';
-            return;
-        }
-        let result = decodeAsciiEscapes(data);
-        document.getElementById('output').innerText = result;
-    }
-</script>
+    </script>
 </body>
 </html>
