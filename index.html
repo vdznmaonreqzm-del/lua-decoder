@@ -1,56 +1,71 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decoder</title>
+    <title>Decryption Tool</title>
     <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            direction: rtl;
-            text-align: right;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #444;
-            border-radius: 5px;
-            background-color: #1e1e1e;
-        }
-        input, button {
-            margin: 10px 0;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #6200ea;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #3700b3;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        .container { max-width: 600px; margin: 0 auto; }
+        textarea { width: 100%; height: 100px; margin-top: 10px; }
+        button { padding: 10px 15px; margin-top: 10px; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>أداة فك التشفير</h1>
-        <input type="text" id="input" placeholder="أدخل النص المشفر هنا..."><br>
-        <button onclick="decodeText()">فك التشفير</button>
-        <h2>الناتج:</h2>
-        <textarea id="output" rows="5" cols="30" readonly></textarea>
+        <h1>Decryption Tool</h1>
+        <label for="input">Input:</label>
+        <textarea id="input"></textarea>
+        <label for="method">Decryption Method:</label>
+        <select id="method">
+            <option value="base64">Base64</option>
+            <option value="xor">XOR</option>
+            <option value="rot13">ROT13</option>
+            <option value="url">URL Encoding</option>
+        </select>
+        <button onclick="decrypt()">Decrypt</button>
+        <div class="result" id="result"></div>
     </div>
     <script>
-        function decodeText() {
-            const inputText = document.getElementById('input').value;
-            // Dummy decoder functionality, replace with actual logic
-            // In reality, implement your decoding logic here.
-            const outputText = atob(inputText); // Example decode using base64
-            document.getElementById('output').value = outputText;
+        function decrypt() {
+            const input = document.getElementById('input').value;
+            const method = document.getElementById('method').value;
+            let output;
+
+            switch (method) {
+                case 'base64':
+                    output = atob(input);
+                    break;
+                case 'xor':
+                    output = xorDecrypt(input);
+                    break;
+                case 'rot13':
+                    output = rot13(input);
+                    break;
+                case 'url':
+                    output = decodeURIComponent(input);
+                    break;
+                default:
+                    output = 'Invalid method';
+            }
+
+            document.getElementById('result').innerText = output;
+        }
+
+        function xorDecrypt(input) {
+            const key = 'mysecretkey';
+            return input.split('').map((char, index) => {
+                return String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(index % key.length));
+            }).join('');
+        }
+
+        function rot13(input) {
+            return input.replace(/[a-zA-Z]/g, (c) => {
+                const start = c <= 'Z' ? 90 : 122;
+                return String.fromCharCode(start - ((start - c.charCodeAt(0) + 13) % 26));
+            });
         }
     </script>
 </body>
