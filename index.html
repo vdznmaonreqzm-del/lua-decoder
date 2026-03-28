@@ -3,51 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Decryption Tool</title>
-    <style>
-        body {
-            background-color: #1e1e1e;
-            color: #f8f8f2;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            border-radius: 8px;
-            background-color: #272822;
-        }
-        h1, h2 {
-            color: #66d9ef;
-        }
-        .result {
-            background: #282a36;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-wrap: break-word;
-        }
-        .developer-bio {
-            margin-top: 20px;
-            font-size: 0.9em;
-        }
-    </style>
+    <title>أداة فك التشفير</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Professional Decryption Tool</h1>
-        <h2>Results:</h2>
-        <div class="result" id="results"></div>
-        <div class="developer-bio">
-            <strong>About the Developer:</strong>
-            <p>This tool was developed to showcase various decryption methods including Base64, XOR, ROT13, and URL encoding. I aim to provide reliable tools for security enthusiasts.</p>
-        </div>
-    </div>
-    <script>
-        // Function to perform decryption methods
-        function decrypt(input) {
-            // Implement decryption methods here
-            // Display results clearly
-        }
-    </script>
+    <h1>أداة فك التشفير</h1>
+    <form>
+        <label for="method">اختار طريقة فك التشفير:</label>
+        <select id="method">
+            <option value="base64">Base64</option>
+            <option value="xor">XOR</option>
+            <option value="rot13">ROT13</option>
+            <option value="url">URL</option>
+        </select>
+        <br>
+        <label for="input">النص المدخل:</label>
+        <textarea id="input" rows="10" cols="50"></textarea>
+        <br>
+        <label for="output">النص الناتج:</label>
+        <textarea id="output" rows="10" cols="50" readonly></textarea>
+        <br>
+        <button type="submit">افك التشفير</button>
+    </form>
 </body>
 </html>
