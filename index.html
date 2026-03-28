@@ -1,30 +1,381 @@
+from flask import Flask, request, jsonify, render_template_string
+import base64
+import re
+import subprocess
+import sys
+
+app = Flask(__name__)
+
+# -------------------- دوال فك التشفير --------------------
+def decode_ascii_escapes(text):
+    """فك \072\065\073 إلى أحرف"""
+    def replace(match):
+        return chr(int(match.group(1)))
+    return re.sub(r'\\(\d+)', replace, text)
+
+def xor_decrypt(data, key):
+    """فك XOR"""
+    result = ""
+    for i in range(len(data)):
+        data_byte = ord(data[i])
+        key_byte = ord(key[i % len(key)])
+        result += chr(data_byte ^ key_byte)
+    return result
+
+def extract_xor_v7(text):
+    """استخراج v7("data","key") من النص"""
+    pattern = r'v7\(\s*["\']([^"\']+)["\']\s*,\s*["\']([^"\']+)["\']\s*\)'
+    matches = re.findall(pattern, text)
+    return matches
+
+def try_common_keys(data):
+    """تجربة مفاتيح شائعة"""
+    common_keys = [
+        r"\126\177\163\187\69\134\219\167",
+        r"\38\84\215\41\118\220\70",
+        r"\156\67\173\74\165",
+        r"\158\48\118\66\114",
+        r"\38\156\55\199",
+        "KEY_DARK_MLNJAVB",
+        "secret"
+    ]
+    for key in common_keys:
+        decoded_key = decode_ascii_escapes(key)
+        try:
+            result = xor_decrypt(data, decoded_key)
+            if result.isprintable() and len(result) > 10:
+                return result
+        except:
+            continue
+    return None
+
+def decode_base64(text):
+    """فك Base64"""
+    try:
+        return base64.b64decode(text).decode('utf-8', errors='ignore')
+    except:
+        return None
+
+def decode_hex(text):
+    """فك Hex"""
+    try:
+        return bytes.fromhex(text).decode('utf-8', errors='ignore')
+    except:
+        return None
+
+def full_decode(script):
+    """فك التشفير الكامل بكل الطرق"""
+    result = script
+    changed = True
+    iterations = 0
+    max_iter = 10
+    
+    # فك ASCII escapes
+    result = decode_ascii_escapes(result)
+    
+    while changed and iterations < max_iter:
+        changed = False
+        new_result = result
+        
+        # 1. فك v7 XOR
+        xor_matches = extract_xor_v7(new_result)
+        for data, key in xor_matches:
+            data_decoded = decode_ascii_escapes(data)
+            key_decoded = decode_ascii_escapes(key)
+            decrypted = xor_decrypt(data_decoded, key_decoded)
+            # جرب فك Base64
+            b64 = decode_base64(decrypted)
+            if b64:
+                decrypted = b64
+            pattern = f'v7("{data}","{key}")'
+            if decrypted and decrypted != pattern:
+                new_result = new_result.replace(pattern, decrypted)
+                changed = True
+        
+        # 2. فك Base64
+        b64_pattern = r'[A-Za-z0-9+\/=]{30,}'
+        b64_matches = re.findall(b64_pattern, new_result)
+        for b64_str in b64_matches:
+            decoded = decode_base64(b64_str)
+            if decoded and len(decoded) > 10 and not any(c in decoded for c in ['\x00', '\xff']):
+                new_result = new_result.replace(b64_str, decoded)
+                changed = True
+        
+        # 3. فك Hex
+        hex_pattern = r'[0-9A-Fa-f]{32,}'
+        hex_matches = re.findall(hex_pattern, new_result)
+        for hex_str in hex_matches:
+            decoded = decode_hex(hex_str)
+            if decoded and len(decoded) > 5:
+                new_result = new_result.replace(hex_str, decoded)
+                changed = True
+        
+        # 4. تجربة مفاتيح شائعة على أي نص طويل
+        long_strings = re.findall(r'["\']([^"\']{30,})["\']', new_result)
+        for long_str in long_strings:
+            decoded = try_common_keys(long_str)
+            if decoded:
+                new_result = new_result.replace(f'"{long_str}"', f'"{decoded}"')
+                changed = True
+        
+        result = new_result
+        iterations += 1
+    
+    return result
+
+# -------------------- واجهة HTML --------------------
+HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Decoder</title>
+    <title>فك تشفير سكريبتات Roblox (كامل)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a1a;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            background: #1a1a2a;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #ffd966;
+            margin-top: 0;
+            text-align: center;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .col {
+            flex: 1;
+            min-width: 400px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+        textarea {
+            width: 100%;
+            background: #0f0f1a;
+            color: #eee;
+            border: 2px solid #3a6ea5;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 400px;
+        }
+        textarea:first-of-type {
+            min-height: 450px;
+        }
+        textarea:last-of-type {
+            min-height: 450px;
+        }
+        button {
+            background: #3a6ea5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2c5282;
+            transform: scale(1.02);
+        }
+        .btn-danger {
+            background: #a53a3a;
+        }
+        .btn-danger:hover {
+            background: #822c2c;
+        }
+        .btn-success {
+            background: #3aa56e;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: #0f0f1a;
+            color: #8bc34a;
+            font-family: monospace;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        @media (max-width: 900px) {
+            .col { min-width: 100%; }
+            textarea { min-height: 300px; }
+        }
+    </style>
 </head>
 <body>
-    <h1>مرحبًا بكم في برنامج فك التشفير التلقائي</h1>
-    <h2>أدخل النص للقيام بفك تشفيره:</h2>
-    <textarea id="inputArea" placeholder="أدخل النص هنا..." rows="10" cols="50"></textarea>
-    <h2>الناتج:</h2>
-    <textarea id="outputArea" readonly rows="10" cols="50"></textarea>
-    <button id="decodeButton">فك التشفير</button>
-    <script>
-        document.getElementById('decodeButton').onclick = function() {
-            // Funcionality to auto-detect encryption and decode
-            var inputText = document.getElementById('inputArea').value;
-            // Add detection logic and decoding functions (XOR, Base64, etc.)
-            var decodedText = autoDetectAndDecode(inputText);
-            document.getElementById('outputArea').value = decodedText;
-        };
+<div class="container">
+    <h1>🔓 فك تشفير سكريبتات Roblox (كامل)</h1>
+    <p style="text-align:center;">الصق السكريبت المشفر في الصندوق الأول، ثم اضغط فك التشفير</p>
+    
+    <div class="row">
+        <div class="col">
+            <label>📥 السكريبت المشفر:</label>
+            <textarea id="inputScript" placeholder='الصق السكريبت المشفر هنا... (مثل اللي يبدأ بـ local v0=... أو --[[ v1.0.0 ... أو LOL!...)'></textarea>
+        </div>
+        <div class="col">
+            <label>📤 السكريبت المفكوك (النتيجة):</label>
+            <textarea id="outputScript" readonly placeholder="ستظهر النتيجة هنا..."></textarea>
+        </div>
+    </div>
+    
+    <div style="text-align: center;">
+        <button onclick="decodeScript()">🔓 فك التشفير</button>
+        <button id="retryBtn" class="btn-danger" onclick="retryDecode()">🔄 هل التشفير غلط؟ جرب طرق إضافية</button>
+        <button class="btn-success" onclick="copyOutput()">📋 نسخ النتيجة</button>
+    </div>
+    
+    <div id="status" class="status">✅ جاهز</div>
+    <div class="footer">
+        <strong>طرق الفك:</strong> ASCII escapes | XOR (v7) | Base64 | Hex | مفاتيح شائعة | تكرار حتى الفك الكامل
+    </div>
+</div>
 
-        function autoDetectAndDecode(text) {
-            // Placeholder for detection logic
-            return text; // Modify this with the actual decoding logic
+<script>
+    async function decodeScript() {
+        let input = document.getElementById('inputScript').value;
+        if (!input.trim()) {
+            document.getElementById('outputScript').value = '⚠️ الرجاء لصق السكريبت أولاً.';
+            return;
         }
-    </script>
+        
+        let statusDiv = document.getElementById('status');
+        statusDiv.innerHTML = '⏳ جاري فك التشفير...';
+        
+        try {
+            let response = await fetch('/decode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script: input })
+            });
+            let data = await response.json();
+            if (data.success) {
+                document.getElementById('outputScript').value = data.result;
+                statusDiv.innerHTML = '✅ تم فك التشفير بنجاح!';
+            } else {
+                document.getElementById('outputScript').value = '❌ فشل فك التشفير:\n' + data.error;
+                statusDiv.innerHTML = '❌ فشل فك التشفير';
+            }
+        } catch(e) {
+            document.getElementById('outputScript').value = '❌ خطأ: ' + e.message;
+            statusDiv.innerHTML = '❌ خطأ في الاتصال';
+        }
+    }
+    
+    async function retryDecode() {
+        let input = document.getElementById('inputScript').value;
+        if (!input.trim()) {
+            document.getElementById('outputScript').value = '⚠️ الرجاء لصق السكريبت أولاً.';
+            return;
+        }
+        
+        let statusDiv = document.getElementById('status');
+        statusDiv.innerHTML = '🔄 جاري المحاولة بطرق إضافية (قد يستغرق وقت)...';
+        
+        try {
+            let response = await fetch('/retry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ script: input })
+            });
+            let data = await response.json();
+            if (data.success) {
+                document.getElementById('outputScript').value = data.result;
+                statusDiv.innerHTML = '✅ تم فك التشفير بطرق إضافية!';
+            } else {
+                document.getElementById('outputScript').value = '❌ فشل فك التشفير:\n' + data.error;
+                statusDiv.innerHTML = '❌ فشل فك التشفير';
+            }
+        } catch(e) {
+            document.getElementById('outputScript').value = '❌ خطأ: ' + e.message;
+            statusDiv.innerHTML = '❌ خطأ في الاتصال';
+        }
+    }
+    
+    function copyOutput() {
+        let output = document.getElementById('outputScript');
+        output.select();
+        document.execCommand('copy');
+        let statusDiv = document.getElementById('status');
+        statusDiv.innerHTML = '📋 تم نسخ النتيجة إلى الحافظة!';
+        setTimeout(() => {
+            if (statusDiv.innerHTML === '📋 تم نسخ النتيجة إلى الحافظة!') {
+                statusDiv.innerHTML = '✅ جاهز';
+            }
+        }, 2000);
+    }
+</script>
 </body>
 </html>
+'''
+
+@app.route('/')
+def index():
+    return render_template_string(HTML_TEMPLATE)
+
+@app.route('/decode', methods=['POST'])
+def decode():
+    data = request.json
+    script = data.get('script', '')
+    if not script:
+        return jsonify({'success': False, 'error': 'لا يوجد نص'})
+    
+    try:
+        result = full_decode(script)
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/retry', methods=['POST'])
+def retry():
+    data = request.json
+    script = data.get('script', '')
+    if not script:
+        return jsonify({'success': False, 'error': 'لا يوجد نص'})
+    
+    try:
+        # طرق إضافية: تكرار أكثر، محاولة فك كل سلسلة
+        result = script
+        for i in range(15):  # تكرار أكثر
+            new_result = full_decode(result)
+            if new_result == result:
+                break
+            result = new_result
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
